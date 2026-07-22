@@ -3,7 +3,7 @@
 **Contribution Number:** 2
 **Student:** Eduardo Perez
 **Issue:** https://github.com/Raftersecurity/rafter-cli/issues/24
-**Status:** Phase III Complete
+**Status:** Phase IV Complete (merged and released)
 
 ---
 
@@ -139,23 +139,52 @@ I also confirmed the project's branch and commit conventions from git history ra
 
 Per the project's contribution rules, the commit includes the AI assistance disclosure: a note that it was written with Claude Code, plus a `Co-Authored-By` trailer.
 
+After the maintainer replied on the issue and pointed to a just-merged Mailchimp pattern (#190, #194) as the closest template, I compared my work against it and made two small alignments to match that convention: I reworked the Node negative test to the assertion style #194 established (`some(...).toBe(false)` with a descriptive "does not match" name) and added the entry spacing the file uses everywhere else. These folded into the same commit by amend.
+
 ### Code Changes
 
 - **Files modified:** `node/src/scanners/secret-patterns.ts`, `python/rafter_cli/scanners/secret_patterns.py`, `node/tests/secret-patterns.test.ts`, `python/tests/test_regex_scanner.py`, `CHANGELOG.md`.
-- **Key commit:** `7818af9` on branch `feat/sendgrid-secret-pattern`, `feat(scan): add SendGrid API key secret pattern (#24)`, five files changed, 40 insertions.
+- **Key commit:** `a3f5e1e` on branch `feat/sendgrid-secret-pattern`, `feat(scan): add SendGrid API key secret pattern (#24)`, five files changed (this is the hash after the Phase IV rebase onto latest main; the original pre-rebase commit was `7818af9`).
 - **Approach decisions:** Followed the DigitalOcean pattern as a near exact template for placement, naming, severity, and tests. Kept the pnpm build approval out of every commit by staging only the five intended files by name. Kept the Python environment isolated in a uv venv so no tracked lock or config file was ever rewritten.
 
 ---
 
 ## Pull Request
 
-To be completed in Phase IV, including the PR link, the Summary, Test plan, and Spec sections the project requires, the parity checklist, the AI assistance disclosure with a Co-Authored-By trailer, and any maintainer feedback and how I addressed it.
+**PR Link:** https://github.com/Raftersecurity/rafter-cli/pull/201
+
+**PR Description:** The PR body carries the four required sections: a Summary of the change, a Test plan (positive and negative tests in each suite, the `pnpm test` and `pytest` results, and the manual reproduction flip with the DigitalOcean control), a Spec note stating no `CLI_SPEC.md` update is needed since CLI behavior does not change, and the five-item parity and safety checklist, all checked. The AI assistance disclosure appears both as a "Written with Claude Code" line in the body and as a `Co-Authored-By: Claude` trailer on the commit.
+
+**Maintainer Feedback:**
+- Rome-1 (collaborator) replied on the issue confirming the plan and that the issue-body regex was the right one. They pointed to a just-merged Mailchimp pattern (#190 and its follow-up #194) as the closest template, specifically flagging the negative-case test as the easy-to-miss part, and asked for the CHANGELOG entry. They said to ping them when the PR was up.
+- How I addressed it: I fetched upstream, compared my work against the Mailchimp pattern, and aligned two conventions to match it. I reworked the Node negative test to the `some(...).toBe(false)` style #194 established, and added the entry spacing the file uses elsewhere. The CHANGELOG entry was already in place. I then opened PR #201 and pinged Rome-1.
+- On merge, Rome-1 confirmed the regex matches the real SendGrid format (`SG.` plus 22, a dot, then 43), that it is identical across Node and Python, that the severity is consistent with the other provider keys, and that both the positive and negative tests and the CHANGELOG entry were present. They made two small formatting tidies on their end, a blank line before the new Python test and a blank line before the `## [0.9.0]` CHANGELOG header, and confirmed nothing further was needed from me.
+
+**Rebase:** Because the Mailchimp PRs and a `v0.9.0` release landed upstream during this cycle, my branch conflicted with `main` on all five files, since Mailchimp touched the same areas. I rebased `feat/sendgrid-secret-pattern` onto the latest `upstream/main`, resolved each conflict by keeping both the Mailchimp and SendGrid additions in order, fixed two merge artifacts (a dropped brace and a missing comma at the Mailchimp boundary) caught by the build and by Claude Code, verified both suites green and the reproduction still detecting, and force-pushed with lease. GitHub then reported the PR as mergeable with no conflicts.
+
+**Outcome:** PR #201 was merged into `Raftersecurity:main` by Rome-1. Issue #24 was closed with the note that the pattern shipped in #201 at `critical` severity, identical across Node and Python, with positive and negative tests and a CHANGELOG entry. The maintainers followed up with a small post-merge tidy commit (#203) and the change was included in the `v0.9.1` release (#207).
+
+**Status:** Merged and released.
 
 ---
 
 ## Learnings & Reflections
 
-To be completed in Phase IV, once the contribution is submitted and reviewed.
+### Technical Skills Gained
+
+I worked a real cross-language parity contribution end to end: adding an identical detection pattern and tests to a TypeScript and a Python implementation, and keeping them byte-for-byte equivalent in behavior despite the different string escaping rules (the Node string form uses a doubled backslash where the Python raw string uses a single one). I got comfortable running two separate toolchains for the same repo, pnpm with Vitest on the Node side and Poetry or an isolated uv virtual environment with pytest on the Python side, and reading each suite's conventions closely enough to match them. I also practiced grounding decisions in the repository rather than assumptions: I settled the pattern severity by surveying what the codebase already assigns to provider keys, and I derived the branch name and commit style from the project's own git history. Finally, I got real practice with a conflict-heavy rebase: resolving overlapping additions across five files, spotting merge artifacts that a diff alone hides, and using a safety branch plus a lease force-push so nothing could be lost.
+
+### Challenges Overcome
+
+The environment was the hardest part. On native Windows the full suite threw 187 failures that were all platform quirks, symlinks, file modes, and path formats, not real bugs. Moving to a Linux native setup inside WSL cleared them and matched the project's CI. Two toolchain gates cost time, the pnpm 11 esbuild build approval and Poetry 2.x rejecting the repo's older lock format, and I solved both without dirtying any tracked file by using an isolated environment and staging only intended files. The largest challenge came at submission: while I was working, the maintainer merged a very similar Mailchimp pattern and cut a release, so my branch suddenly conflicted with `main` on every file. Rebasing produced two subtle merge artifacts, a dropped brace and a missing comma at the boundary between the incoming Mailchimp entries and mine, which broke the build and the test collection until they were found and fixed.
+
+### What I'd Do Differently Next Time
+
+Two things. First, I would set up the Linux native environment from the start instead of trying Windows first, since every environmental failure I hit disappeared under WSL and the detour cost real time. Second, and more importantly, the moment I saw that a similar pattern had just merged upstream, I should have immediately checked whether it collided with my branch, rather than only comparing style. Catching the conflict earlier would have let me rebase before pushing instead of after, and would have avoided opening a PR that briefly showed a conflict banner. The lesson is to treat "someone just changed the same files upstream" as an immediate signal to rebase and re-verify, not just to compare conventions.
+
+### Outcome
+
+The contribution was merged and shipped. The only changes the maintainers made were two blank lines for formatting, which tells me the substance, the regex, the severity choice, the parity across both languages, the positive and negative tests, and the changelog entry, all landed correctly the first time. Following their steer to the Mailchimp template is what got it there, and the lesson I take forward is that reading a project's most recent accepted work is the fastest way to match its conventions.
 
 ---
 
